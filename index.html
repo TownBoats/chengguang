@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>橙光游戏 960×540 图片放大至 1280×720 - 高质量图片放大工具</title>
+    <!-- SEO 优化部分 -->
+    <meta name="description" content="专为橙光游戏素材打造，一键将 960×540 图片放大到 1280×720，支持 PNG、JPG、JPEG 格式。本地浏览器处理，不上传您的图片，保证隐私。">
+    <meta name="keywords" content="橙光游戏, 游戏素材, 960×540, 1280×720, 图片放大, 高质量, 本地处理, 高清放大">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover {
+            border-color: #666;
+            background-color: #f0f0f0;
+        }
+        .drop-zone.drag-over {
+            border-color: #2196F3;
+            background-color: #E3F2FD;
+        }
+        .file-input {
+            display: none;
+        }
+        .select-button {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .select-button:hover {
+            background-color: #1976D2;
+        }
+        .download-all {
+            display: none;
+            margin: 20px 0;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .download-all:hover {
+            background-color: #388E3C;
+        }
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress {
+            width: 0;
+            height: 100%;
+            background-color: #2196F3;
+            transition: width 0.3s ease;
+        }
+        .status {
+            margin-top: 10px;
+            text-align: center;
+            color: #666;
+        }
+        .preview-container {
+            display: none;
+            margin: 20px 0;
+        }
+        .preview-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: #f44336;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .info {
+            background-color: #E3F2FD;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>960×540 一键放大至 1280×720 - 橙光素材专用</h1>
+        <div class="info">
+            本工具可帮助 <span class="highlight">将橙光游戏素材从 960×540 放大到 1280×720</span>，同时保持较高的清晰度。
+            <br><br>
+            <strong>本地处理：</strong> 所有图片均在您的浏览器中完成处理，<u>不会上传到任何服务器</u>，您的素材安全无忧。
+            <br><br>
+            <strong>支持格式：</strong> PNG, JPG, JPEG
+            <br><br>
+            <strong>建议：</strong> 图片大小不要超过 5MB 以获得最佳性能。
+            <br><br>
+            只需拖拽或选择文件即可快速放大并下载结果。
+        </div>
+        <div class="drop-zone" id="dropZone">
+            <div>拖拽图片到这里，或者</div>
+            <label class="select-button">
+                选择图片
+                <input type="file" class="file-input" id="fileInput" multiple accept="image/*">
+            </label>
+        </div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="status" id="status">处理中...</div>
+        </div>
+        <button class="download-all" id="downloadAll">下载所有处理后的图片</button>
+        <div class="preview-container" id="previewContainer">
+            <h3>预览</h3>
+            <img class="preview-image" id="previewImage">
+        </div>
+    </div>
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const downloadAll = document.getElementById('downloadAll');
+        const progressContainer = document.getElementById('progressContainer');
+        const progress = document.getElementById('progress');
+        const status = document.getElementById('status');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const processedImages = [];
+
+        function updateProgress(current, total) {
+            const percentage = (current / total) * 100;
+            progress.style.width = percentage + '%';
+            status.textContent = `处理中... ${current}/${total} 张图片`;
+        }
+
+        function showError(message) {
+            const error = document.createElement('div');
+            error.className = 'error';
+            error.textContent = message;
+            dropZone.appendChild(error);
+            setTimeout(() => error.remove(), 3000);
+        }
+
+        async function processImage(file) {
+            return new Promise((resolve, reject) => {
+                // 判断大小 5MB
+                if (file.size > 5 * 1024 * 1024) {
+                    reject(new Error('图片大小不能超过5MB'));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        // 4/3 放大倍数，使 960×540 -> 1280×720
+                        const newWidth = Math.round(img.width * 4 / 3);
+                        const newHeight = Math.round(img.height * 4 / 3);
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+
+                        // 使用多步渐进式缩放提高质量
+                        const steps = 3;
+                        let tempCanvas = document.createElement('canvas');
+                        let tempCtx = tempCanvas.getContext('2d');
+                        tempCanvas.width = img.width;
+                        tempCanvas.height = img.height;
+                        tempCtx.drawImage(img, 0, 0);
+
+                        for (let i = 0; i < steps; i++) {
+                            const stepWidth = i === steps - 1
+                                ? newWidth
+                                : img.width + ((newWidth - img.width) * (i + 1)) / steps;
+                            const stepHeight = i === steps - 1
+                                ? newHeight
+                                : img.height + ((newHeight - img.height) * (i + 1)) / steps;
+                            let nextCanvas = document.createElement('canvas');
+                            nextCanvas.width = stepWidth;
+                            nextCanvas.height = stepHeight;
+                            let nextCtx = nextCanvas.getContext('2d');
+                            nextCtx.imageSmoothingEnabled = true;
+                            nextCtx.imageSmoothingQuality = 'high';
+                            nextCtx.drawImage(tempCanvas, 0, 0, stepWidth, stepHeight);
+                            tempCanvas = nextCanvas;
+                        }
+                        ctx.drawImage(tempCanvas, 0, 0);
+
+                        canvas.toBlob((blob) => {
+                            processedImages.push({
+                                name: file.name,
+                                blob: blob
+                            });
+                            // 更新预览
+                            const url = URL.createObjectURL(blob);
+                            previewImage.src = url;
+                            previewContainer.style.display = 'block';
+                            resolve();
+                        }, 'image/png', 1.0);
+                    };
+                    img.onerror = () => reject(new Error('图片加载失败'));
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => reject(new Error('文件读取失败'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        };
+
+        dropZone.ondragleave = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        };
+
+        dropZone.ondrop = async (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+            if (files.length === 0) {
+                showError('请选择图片文件');
+                return;
+            }
+            progressContainer.style.display = 'block';
+            processedImages.length = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                try {
+                    await processImage(files[i]);
+                    updateProgress(i + 1, files.length);
+                } catch (error) {
+                    showError(error.message);
+                }
+            }
+
+            if (processedImages.length > 0) {
+                downloadAll.style.display = 'block';
+                status.textContent = '处理完成！';
+            }
+        };
+
+        fileInput.onchange = async (e) => {
+            const files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
+            if (files.length === 0) {
+                showError('请选择图片文件');
+                return;
+            }
+            progressContainer.style.display = 'block';
+            processedImages.length = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                try {
+                    await processImage(files[i]);
+                    updateProgress(i + 1, files.length);
+                } catch (error) {
+                    showError(error.message);
+                }
+            }
+
+            if (processedImages.length > 0) {
+                downloadAll.style.display = 'block';
+                status.textContent = '处理完成！';
+            }
+        };
+
+        downloadAll.onclick = () => {
+            processedImages.forEach(image => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(image.blob);
+                link.download = 'resized_' + image.name;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            });
+        };
+    </script>
+</body>
+</html>
